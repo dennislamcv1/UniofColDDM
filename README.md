@@ -1,2 +1,4 @@
 # UniofColDDM
-The Data Driven Manager Specialization
+## The Data Driven Manager Specialization
+
+In the Data Driven Manager specialization, you will learn how to first understand the type of data that you have (or want to generate), then describe it with numbers and graphs to communicate with your audience. You will practice using probability and distributions to understand the underlying nature of your data to make decisions and solve problems in a way that increases the likelihood of a desired outcome. You will learn the steps to create a plan to answer business and engineering questions and reduce risk when making decisions. You’ll study how to determine best- and worst-case scenarios using data. Finally, you’ll acquire data analysis skills to answer business and engineering questions that will help you make appropriate decisions. 
