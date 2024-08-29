@@ -1,0 +1,137 @@
+---
+title: "Describing Data Graphically and Numerically"
+output: html_document
+date: "2024-08-29"
+---
+
+```{r}
+# Load the data
+data <- read.table("RestaurantDeliveryTime.txt", header = TRUE, sep = "\t")
+
+# Preview the data
+head(data)
+
+str(data)
+
+colnames(data)
+
+```
+
+```{r}
+sample_size <- length(data$Delivery.Time..Dominos.1)
+sample_size
+
+mean_delivery_time <- mean(data$Delivery.Time..Dominos.1)
+mean_delivery_time
+
+median_delivery_time <- median(data$Delivery.Time..Dominos.1)
+median_delivery_time
+
+
+```
+
+```{r}
+# Extract delivery times for Restaurant 2
+restaurant2_data <- data$Delivery.Time..Dominos.2
+
+# Extract delivery times for Restaurant 1
+restaurant1_data <- data$Delivery.Time..Dominos.1
+
+mean_delivery_time_2 <- mean(restaurant2_data)
+mean_delivery_time_2
+
+median_delivery_time_2 <- median(restaurant2_data)
+median_delivery_time_2
+
+```
+
+```{r}
+# Standard Deviation for Restaurant 1
+sd_1 <- sd(restaurant1_data)
+sd_1
+
+
+
+variance_1 <- var(restaurant1_data)
+variance_1
+
+range_1 <- range(restaurant1_data)
+range_1
+# Calculate the range as the difference between the max and min
+range_value_1 <- diff(range_1)
+range_value_1
+
+
+sd_2 <- sd(restaurant2_data)
+sd_2
+
+variance_2 <- var(restaurant2_data)
+variance_2
+
+```
+
+```{r}
+library(e1071)
+
+range_2 <- range(restaurant2_data)
+range_value_2 <- diff(range_2)
+range_value_2
+
+skewness_1 <- skewness(restaurant1_data)
+skewness_1
+
+kurtosis_1 <- kurtosis(restaurant1_data)
+kurtosis_1
+
+skewness_2 <- skewness(restaurant2_data)
+skewness_2
+
+kurtosis_2 <- kurtosis(restaurant2_data)
+kurtosis_2
+
+
+```
+
+```{r}
+# Histogram for Restaurant 1
+hist(restaurant1_data, 
+     main = "Histogram of Delivery Times for Restaurant 1", 
+     xlab = "Delivery Time (minutes)", 
+     col = "lightblue", 
+     breaks = 10)  # Adjust breaks for better visualization
+
+# Histogram for Restaurant 2
+hist(restaurant2_data, 
+     main = "Histogram of Delivery Times for Restaurant 2", 
+     xlab = "Delivery Time (minutes)", 
+     col = "lightgreen", 
+     breaks = 10)  # Adjust breaks for better visualization
+
+```
+
+
+
+```{r}
+# Combine the data into a data frame for plotting
+delivery_data <- data.frame(
+  DeliveryTime = c(restaurant1_data, restaurant2_data),
+  Restaurant = factor(rep(c("Restaurant 1", "Restaurant 2"), each = length(restaurant1_data)))
+)
+
+# Generate the Box and Whisker Plot
+boxplot(DeliveryTime ~ Restaurant, data = delivery_data,
+        main = "Boxplot of Delivery Times for Restaurants 1 and 2",
+        ylab = "Delivery Time (minutes)", col = c("lightblue", "lightgreen"))
+
+```
+
+
+```{r}
+# Calculate the Pearson correlation coefficient
+correlation_coefficient <- cor(restaurant1_data, restaurant2_data)
+correlation_coefficient
+
+```
+
+
+

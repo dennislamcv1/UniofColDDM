@@ -1,0 +1,152 @@
+---
+title: "Determining Probabilities"
+output: html_document
+date: "2024-08-29"
+---
+
+```{r}
+# Startup Code ------------------------------------------------------------
+require(lolcat)
+require(dplyr)
+require(flextable)
+ro <- round.object # Easy version of Rounding Objects
+nqtr <- function(x,d){noquote(t(round.object(x, d)))}
+options(scipen=999)
+```
+
+```{r}
+# Given values
+incorrect_invoices <- 6
+total_invoices <- 500
+
+# Probability calculation
+probability <- incorrect_invoices / total_invoices
+
+# Rounding the result to 3 decimal places
+rounded_probability <- round(probability, 3)
+
+# Print the result
+rounded_probability
+
+```
+
+```{r}
+# Given values
+incorrect_invoices <- 6
+total_invoices <- 500
+
+# Probability of selecting one incorrect invoice
+single_probability <- incorrect_invoices / total_invoices
+
+# Probability of selecting two incorrect invoices in succession (with replacement)
+both_incorrect_probability <- single_probability * single_probability
+
+# Convert to percentage and round to 4 decimal places
+rounded_percentage <- round(both_incorrect_probability * 100, 4)
+
+# Print the result without the percentage sign
+rounded_percentage
+
+```
+
+```{r}
+# Given probabilities
+p_laptop_failure <- 0.06
+p_server_rejection <- 0.03
+
+# Probability of both failures happening
+p_both_failures <- p_laptop_failure * p_server_rejection
+
+# Probability of an unsuccessful connection
+p_unsuccessful <- p_laptop_failure + p_server_rejection - p_both_failures
+
+# Probability of a successful connection
+p_successful <- 1 - p_unsuccessful
+
+# Rounding to 4 decimal places
+rounded_successful <- round(p_successful, 4)
+rounded_unsuccessful <- round(p_unsuccessful, 4)
+
+# Output results
+rounded_successful
+rounded_unsuccessful
+
+```
+
+```{r}
+# Total parts per vendor
+total_parts <- 1000
+
+# Defective rates
+defective_rate_acme <- 0.015
+defective_rate_fbn <- 0.089
+defective_rate_shadee <- 0.008
+
+# Calculate defective and non-defective parts
+defective_acme <- total_parts * defective_rate_acme
+non_defective_acme <- total_parts - defective_acme
+
+defective_fbn <- total_parts * defective_rate_fbn
+non_defective_fbn <- total_parts - defective_fbn
+
+defective_shadee <- total_parts * defective_rate_shadee
+non_defective_shadee <- total_parts - defective_shadee
+
+# Create a contingency table (matrix)
+contingency_table <- matrix(c(defective_acme, non_defective_acme,
+                              defective_fbn, non_defective_fbn,
+                              defective_shadee, non_defective_shadee),
+                            nrow = 3, byrow = TRUE)
+
+# Assign row and column names
+rownames(contingency_table) <- c("ACME", "FBN", "SHA-DEE")
+colnames(contingency_table) <- c("Defective Parts", "Non-Defective Parts")
+
+# Print the contingency table
+contingency_table
+
+```
+
+```{r}
+
+# Given data
+total_parts <- 3000
+parts_per_vendor <- 1000
+defective_acme <- 15
+defective_fbn <- 89
+defective_shadee <- 8
+
+# Probability of selecting a part from ACME
+p_acme <- parts_per_vendor / total_parts
+
+# Probability of selecting a defective part
+total_defective <- defective_acme + defective_fbn + defective_shadee
+p_defective <- total_defective / total_parts
+
+# Probability of selecting a part from ACME or a defective part
+p_acme_and_defective <- defective_acme / total_parts
+p_acme_or_defective <- p_acme + p_defective - p_acme_and_defective
+
+# Probability that a defective part is from FBN
+p_fbn_and_defective <- defective_fbn / total_parts
+p_defective_given_fbn <- p_fbn_and_defective / p_defective
+
+# Probability of selecting a defective part from FBN
+p_defective_and_fbn <- p_fbn_and_defective
+
+# Print results with 4 decimal places
+round(c(p_acme, p_acme_or_defective, p_defective_given_fbn, p_defective_and_fbn), 4)
+
+
+```
+
+
+
+
+
+
+
+
+
+
+

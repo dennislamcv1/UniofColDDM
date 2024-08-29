@@ -1,0 +1,62 @@
+---
+title: "Working with Data in RStudio and ROIStat"
+output: html_document
+date: "2024-08-29"
+---
+
+```{r}
+# Load the data
+data <- read.table("Practice.txt", header = TRUE, sep = "\t")
+
+# Number of variables (columns)
+num_vars <- ncol(data)
+num_vars
+
+```
+
+```{r}
+# Number of rows
+num_rows <- nrow(data)
+num_rows
+```
+
+```{r}
+# Inspect the structure of the data
+str(data)
+
+# Count the number of integer columns
+num_integers <- sum(sapply(data, is.integer))
+num_integers
+
+```
+
+```{r}
+# Check for missing values
+total_missing_values <- sum(is.na(data))
+total_missing_values
+
+```
+
+```{r}
+# Variables with missing values
+variables_with_na <- colnames(data)[colSums(is.na(data)) > 0]
+variables_with_na
+
+```
+
+```{r}
+# Convert Shift to a factor
+data$Shift <- as.factor(data$Shift)
+
+# Verify the change
+str(data$Shift)
+
+```
+
+```{r}
+# Number of levels in Shift
+num_levels_shift <- nlevels(data$Shift)
+num_levels_shift
+
+```
+

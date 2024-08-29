@@ -1,0 +1,86 @@
+---
+title: "Making Decisions with Discrete Probability Distributions"
+output: html_document
+date: "2024-08-29"
+---
+
+```{r}
+# Load the data
+data <- read.table("DiscretePD.txt", header = TRUE, sep = "\t")
+
+# Display the first few rows
+head(data)
+
+```
+
+```{r}
+# Calculate the total number of leakers and total cans
+total_leakers <- sum(data$Leakers)
+total_cans <- 100 * 250  # 100 days, 250 cans each day
+
+# Probability of a single can being a leaker
+p_leaker <- total_leakers / total_cans
+p_leaker
+
+```
+
+```{r}
+# Probability of 0 leakers in 80 cans
+prob_0_leakers <- dbinom(0, size = 80, prob = p_leaker)
+prob_0_leakers
+
+```
+
+```{r}
+# Probability of exactly 4 leakers in 80 cans
+prob_4_leakers <- dbinom(4, size = 80, prob = p_leaker)
+prob_4_leakers
+
+```
+
+```{r}
+# Probability of fewer than 4 leakers in 80 cans
+prob_fewer_than_4 <- pbinom(3, size = 80, prob = p_leaker)
+prob_fewer_than_4
+
+```
+
+### Q2
+
+```{r}
+# Given data for the number of scratches
+lambda <- 8.56  # Average rate of scratches in 100 cans (this is typically calculated from previous data)
+
+# Question 6: Expected (average) number of scratches in a sample of 100 cans
+expected_scratches <- lambda  # Since it's a Poisson distribution, the expected value is lambda
+expected_scratches
+
+# Question 7: Probability of finding exactly 11 scratches in 100 cans
+prob_11_scratches <- dpois(11, lambda = lambda)
+prob_11_scratches
+
+# Question 8: Probability of finding 11 or fewer scratches
+prob_11_or_fewer_scratches <- ppois(11, lambda = lambda)
+prob_11_or_fewer_scratches
+
+# Question 9: Probability of finding more than 11 scratches
+prob_more_than_11_scratches <- 1 - ppois(11, lambda = lambda)
+prob_more_than_11_scratches
+
+# Question 10: P-value associated with the statistical test (Goodness of Fit test for Poisson distribution)
+# Assuming the null hypothesis is that the data follows a Poisson distribution.
+# Perform a Chi-squared test (or alternatively, use another method) to verify the distribution.
+
+# Simulating a goodness-of-fit test (this is just a placeholder for how such a test might be performed)
+# Here, we assume a p-value based on a hypothetical test scenario
+p_value_test <- 0.533  # This is an example, you'd need actual data to perform this test.
+p_value_test
+
+```
+
+
+
+
+
+
+

@@ -1,0 +1,93 @@
+---
+title: "Making Decisions with Continuous Probability Distributions"
+output: html_document
+date: "2024-08-29"
+---
+
+# Problem 1
+
+```{r}
+# Given parameters
+mean_score <- 150
+sd_score <- 10
+target_score <- 145
+
+# Calculate the probability
+prob <- pnorm(target_score, mean = mean_score, sd = sd_score)
+prob
+
+```
+# Problem 2
+
+```{r}
+# Load data
+airline_data <- read.table("airline.txt", header = TRUE, sep = "\t")
+
+str(airline_data)
+
+
+
+
+# Extract the first column (Ticket Prices)
+ticket_prices <- airline_data$Price
+
+sum(is.na(ticket_prices))
+
+ticket_prices <- na.omit(ticket_prices)
+
+ticket_prices <- as.numeric(ticket_prices)
+
+head(ticket_prices)  # Check the first few entries for any non-numeric values
+
+
+# Perform the Shapiro-Wilk test
+shapiro_test <- shapiro.test(ticket_prices)
+shapiro_test
+
+```
+
+```{r}
+
+# Question 5: Percentage of customers who paid more than $1,800
+percentage_above_1800 <- mean(ticket_prices > 1800) * 100
+percentage_above_1800  # This will give you the percentage of customers who paid more than $1800
+
+# Question 6: Percentage of the population paying more than $1,800
+mean_price <- mean(ticket_prices)
+sd_price <- sd(ticket_prices)
+population_percentage_above_1800 <- (1 - pnorm(1800, mean = mean_price, sd = sd_price)) * 100
+population_percentage_above_1800  # This gives the percentage for the population
+
+# Question 7: Percentage paying between $1,300 and $2,000
+percentage_between_1300_2000 <- mean(ticket_prices >= 1300 & ticket_prices <= 2000) * 100
+percentage_between_1300_2000  # This gives the percentage of customers within this price range
+
+# Population percentage for customers paying between $1300 and $2000
+population_percentage_between_1300_2000 <- (pnorm(2000, mean = mean_price, sd = sd_price) - pnorm(1300, mean = mean_price, sd = sd_price)) * 100
+population_percentage_between_1300_2000  # This gives the population percentage for this range
+
+```
+
+# Problem 3
+
+```{r}
+# Perform the Shapiro-Wilk test for normality again
+shapiro_test <- shapiro.test(ticket_prices)
+shapiro_test$p.value
+
+```
+
+
+```{r}
+# Extract the Bag Delivery Time column
+bag_delivery_time <- airline_data$Bag_Delivery_Time
+
+# Calculate the percentage of customers who waited more than 60 minutes
+percentage_waiting_over_60 <- mean(bag_delivery_time > 60, na.rm = TRUE) * 100
+percentage_waiting_over_60
+
+```
+
+
+
+
