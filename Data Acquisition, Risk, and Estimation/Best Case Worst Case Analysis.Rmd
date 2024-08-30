@@ -1,0 +1,92 @@
+---
+title: "Best Case Worst Case Analysis"
+output: html_document
+date: "2024-08-29"
+---
+
+```{r}
+# Startup Code ------------------------------------------------------------
+require(lolcat)
+require(flextable)
+require(dplyr)
+require(ftExtra)
+
+ro<-round.object
+nqtr<-function(x,d){noquote(t(round.object(x, d)))}
+options(scipen=999)
+```
+```{r}
+# Load Data ---------------------------------------------------------------
+# Assuming you have a data file 'Push.txt' with a header 'Force'
+data <- read.table("Push.txt", header = TRUE)
+
+data
+```
+
+
+
+
+
+```{r}
+# Inputs ------------------------------------------------------------------
+xbar<- mean(data$Force)
+sd<- sd(data$Force)
+n<- 24
+USL<-
+LSL<- 126
+CI<- 0.95
+rnd<- 4      # Number of digits to round to
+```
+
+
+```{r}
+# Calculate Process Standard Deviation ------------------------------------
+process_std_dev <- sd(data$Force)
+
+# Print the result rounded to 4 decimal places
+nqtr(process_std_dev, 4)
+```
+
+```{r}
+# Calculate Sample Statistics ---------------------------------------------
+n <- length(data$Force)             # Sample size
+mean_force <- mean(data$Force)      # Sample mean
+std_dev_force <- sd(data$Force)     # Sample standard deviation
+
+# Determine the Critical Value (t-distribution) ---------------------------
+alpha <- 0.10                       # Significance level for a 90% CI
+df <- n - 1                         # Degrees of freedom
+t_critical <- qt(1 - alpha/2, df)   # Critical t-value
+
+# Compute the Margin of Error ---------------------------------------------
+margin_of_error <- t_critical * (std_dev_force / sqrt(n))
+
+# Calculate the Upper Bound of the Confidence Interval --------------------
+upper_bound <- mean_force + margin_of_error
+
+# Print the Upper Bound rounded to 4 decimal places
+nqtr(upper_bound, 4)
+```
+
+```{r}
+# Calculate Sample Statistics ---------------------------------------------
+n <- length(data$Force)             # Sample size
+std_dev_force <- sd(data$Force)     # Sample standard deviation
+var_force <- var(data$Force)        # Sample variance
+
+# Determine the Critical Values (Chi-Square distribution) -----------------
+alpha <- 0.10                       # Significance level for a 90% CI
+df <- n - 1                         # Degrees of freedom
+chi2_lower <- qchisq(alpha/2, df)   # Lower critical chi-square value
+chi2_upper <- qchisq(1 - alpha/2, df) # Upper critical chi-square value
+
+# Compute the Lower Bound of the Confidence Interval for Variance ---------
+lower_var_bound <- (df * var_force) / chi2_upper
+
+# Convert to Standard Deviation -------------------------------------------
+lower_std_dev_bound <- sqrt(lower_var_bound)
+
+# Print the Lower Bound rounded to 4 decimal places
+nqtr(lower_std_dev_bound, 4)
+```
+

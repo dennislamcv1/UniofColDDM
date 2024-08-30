@@ -1,0 +1,205 @@
+---
+title: "Essentials for Effect Size Calculations"
+output: html_document
+date: "2024-08-30"
+---
+
+# Problem 1
+
+# The product characteristic of 'hardness' has been identified as critical to both safety and performance on the drive links utilized to hold the cutters together on a saw chain (used on gasoline-operated chain saws). The lower specification limit for this product is 50 Rc (Rockwell Hardness measure). Historically, the distribution of all parts produced has been shown to run in a generally stable state, with a mean (µ) of 53, a standard deviation (s) of 2.002, and γ3 and γ4  values of 0.00. 
+
+# Production management has determined that each percentage point (i.e. 1.00%) of scrap creates an estimated dollar ($) loss of $75,000.00 per year; these losses stem from inspection costs, waste, sorting services, and lost market share.
+
+# Personnel in the Engineering and Research and Development department have suggested that a new temperature stabilizer for the heat treat furnace could solve (or help solve) this problem by increasing the average hardness (which is a good thing), but the new equipment costs $800,000. On the bright side, everyone is certain that while the new equipment might not raise the average hardness high enough to solve the problem, it is physically incapable of increasing hardness variability or dropping the average hardness level (thereby guaranteeing no increase in the process defective rate).
+
+# Management is willing to spend the money for the new equipment, but only if after a two-year period (24 months following installation) the equipment has 'paid for itself', based on the reduction of costs associated with the historical scrap levels. In other words, the reduction in scrap costs for a two-year period must (minimally) equal or exceed $800,000.00. The equipment vendor is willing to let us test their equipment on our furnace, but only for a very limited time, so we cannot just run until we have an answer one way or another.
+
+# You have been assigned, based upon your outstanding training in your University of Colorado Data Driven Manager course, to calculate the minimum sample size required to conduct this experiment (yes, you must get an effect size first in order to do it). In addition to the conditions detailed above, you should note that if the new machine 'works' (within the economic conditions described by management), we want at least a 95% chance of correctly detecting this opportunity. On the other hand, management is demanding no more than a 1% chance of buying the equipment and subsequently discovering that it doesn't work (i.e., not meeting the payback requirement).
+
+```{r}
+
+# Startup Code
+require(lolcat)
+ro<-round.object
+nqtr<-function(x,d){noquote(t(round.object(x, d)))}
+options(scipen=999)
+
+```
+
+```{r}
+# 1. Determine the Total Annual Loss -----------------------------------------
+# A. The Current Total $ Cost or Loss (per year)
+(lossperyear<-5017.50)
+```
+
+```{r}
+# 2. Determine the Cost of the Solution -----------------------------------
+# B. Cost of the Proposed Solution ($). 
+#    The Proposed Solution is presumed to be able to 
+#    provide a benefit.
+(solutioncost<-800000)
+```
+
+```{r}
+# 3. Determine the Solution Benefit - Apply the ROI Requirements -----------
+# C. ROI Requirements applied to B, the cost of the 
+#    Proposed Solution ($) as an annualized 
+#    "Solution Benefit." 
+(ROIperyear<-solutioncost/2) # annualized
+```
+
+```{r}
+# 4. Determine the Current % Nonconforming -----------------------------------
+#    What you'll need to determine or calculate, 
+#    but it may be given:  
+#   (Draw a picture first):
+mu<-53
+sd<-2.002
+LSL<-50
+LL<-mu-(4*sd)
+UL<-mu+(4*sd)
+
+f.x <- function(x) {dnorm(x, mean = mu, sd = sd)}
+plot(f.x,LL,UL, ylab="Probability Density", lwd=2)
+visualize.shade.between.functions(f2.x = f.x
+, from=LL
+, to= 100
+, col="#CFB87C")
+abline(h=0)
+abline(v=mu)
+
+
+
+```
+
+```{r}
+# D.	Current % nonconforming or defective (%)
+# a.	This value will have to be given to you - or -
+#     you will have to compute/determine it. 
+
+# i.	Continuous data: From Mu, Sigma, SL (the Specification Limit)
+#     and a knowledge of normality of the current distribution(process)
+#     - or -
+pnorm(q = LSL, mean = mu, sd = sd, lower.tail = T)
+(percloss<-pnorm(q = LSL, mean = mu, sd = sd, lower.tail = T)*100)
+```
+
+```{r}
+# What percentage is below the lower specification limit?
+
+# 5. Determine the $ loss per 1% Out of Specification ---------------------
+# E. $ Loss value per 1% nonconforming = A/D
+(lossper1<-lossperyear/percloss) # $/1%
+```
+
+```{r}
+# 6. Determine the Maximum Allowable Annual Loss -----------------------------
+# F. Maximum Allowable (annual) Loss permitted given the 
+#    Solution Benefit ($). This is in $ and determined as 
+#    A-C.
+(solutionbenefit<-lossperyear-ROIperyear) # $
+```
+
+```{r}
+# 7. Determine the New Maximum Allowable Defect Rate to meet ROI -------------
+# G. New maximum (allowable) defect rate given the 
+#    solution (%) = F/E
+(newpercloss<-solutionbenefit/lossper1)
+(newproploss<-newpercloss/100)
+```
+
+```{r}
+# 8. Determine Needed Shift in Performance -----------------------------------
+# H. What does the new mean have to be, assuming that the 
+#    distribution continues to be normal, and the standard
+#    deviation the same?
+#    Calculate new score associated with that percentage
+(znew<-qnorm(newproploss, lower.tail = T))
+
+# Calculate new mean from the new z-score
+(munew<-LSL-(znew*(sd)))
+
+# Calculate effect size for mean
+(deltamu<-munew-mu)
+
+# Effect Size Visualization for Means -----------------------------------------------
+mu<-
+sd<-
+LSL<-
+
+# Create the normal curve and shade the lower tail area
+mu<-
+sd<-
+LSL<-
+LL<-mu-(4*sd)
+UL<-mu+(4*sd)
+
+f.x <- function(x) {dnorm(x, mean = mu, sd = sd)}
+plot(f.x,LL,UL, ylab="Probability Density", lwd=2, main="Current vs New", xlab="psi")
+visualize.shade.between.functions(f2.x = f.x
+                                  , from=LL
+                                  , to= 100
+                                  , col="#CFB87C")
+abline(h=0)
+abline(v=mu)
+
+par(new=T)
+# Add new curve with calculated new mean
+f.x <- function(x) {dnorm(x, mean = munew, sd = sd)}
+plot(f.x,LL,UL, lwd=2, lty=2, col="blue", xlab="",ylab="",xaxt="n",yaxt="n")
+visualize.shade.between.functions(f2.x = f.x
+                                  , from=LL
+                                  , to= 100
+                                  , col="blue")
+
+# Add line at mean
+abline(v = munew, lty=2, col="blue")
+
+```
+```{r}
+# Effect Size Calculations for Variability --------------------------------
+
+## H. What does the new standard deviation have to be, 
+#     assuming that the distribution continues to be 
+#     normal, and the mean the same?
+#     Calculate new score associated with that percentage
+(znew<-qnorm(newproploss, lower.tail = T))
+
+# Calculate new standard deviation from the new z-score
+(sdnew<-(LSL-mu)/znew)
+
+# Calculate effect size for standard deviation
+(deltasd<-sd-sdnew)
+
+# Effect Size Visualization for Variance -----------------------------------------------
+mu<-
+sd<-
+LSL<-
+LL<-mu-(4*sd)
+UL<-mu+(4*sd)
+
+# Create the normal curve and shade the lower tail area
+f.x <- function(x) {dnorm(x, mean = mu, sd = sd)}
+plot(f.x,LL,UL, ylab="Probability Density", lwd=2, main="Current vs New", xlab="psi")
+visualize.shade.between.functions(f2.x = f.x
+                                  , from=LL
+                                  , to= LSL
+                                  , col="#CFB87C")
+# Add line at mean
+abline(v = mu, h=0)
+
+par(new=T)
+# Add new curve with calculated new standard deviation
+f.x <- function(x) {dnorm(x, mean = mu, sd = sdnew)}
+plot(f.x,LL,UL, lwd=2, lty=2, col="blue", xlab="",ylab="",xaxt="n",yaxt="n")
+visualize.shade.between.functions(f2.x = f.x
+                                  , from=LL
+                                  , to= LSL
+                                  , col="blue")
+```
+
+
+```{r}
+
+```
+
