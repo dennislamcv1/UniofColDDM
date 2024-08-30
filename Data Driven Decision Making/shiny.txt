@@ -1,0 +1,5 @@
+Before	After	Count
+1	1	102
+1	2	34
+2	1	4
+2	2	10

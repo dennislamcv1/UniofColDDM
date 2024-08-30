@@ -1,0 +1,611 @@
+---
+title: "One Way ANOVA Fixed Effects Template"
+author: "Professor Wendy Martin"
+date: "1/10/2022"
+output:
+  word_document: default
+  html_document: default
+  pdf_document: default
+  latex_engine: xelatex
+always_allow_html: yes
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+require(lolcat)          
+require(car)
+require(dplyr)
+require(sjstats)
+require(flextable)
+options(scipen=99,digits = 10)
+options(show.signif.stars=FALSE)   # Turn off * to indicate significance
+nqtr <- function(x,d){noquote(t(round.object(x, d)))}
+ro <- round.object
+set_flextable_defaults(fonts_ignore=TRUE)
+
+blanks <- rep(c(' ', '\n'),2) # This will print two blank lines between plots. 
+
+AddBreak <- function() {
+for (i in blanks)
+  cat(i)
+}
+```
+
+## One Way Analysis of Variance - Fixed Effects
+
+### Experiment Title: Soldering Experiment
+
+### Step 1: Import File, Define Factors/Variables
+```{r import file, echo=FALSE}
+Solder <- read.delim("G:/My Drive/Coursera/The Data Driven Manager/Course 3 Data Driven Decision Making/M5 The One Way Analysis of Variance/Solder.txt")
+
+group.labels<-c("New1","New2","New3","Current")
+Solder$method<-factor(Solder$method, labels = group.labels)
+
+# Name of Data Frame
+df<-Solder
+
+# Criterion Measure
+cm<-Solder$push
+
+# Name of Criterion Measure
+ncm<-"Push Force"
+
+# Factor
+factor<-Solder$method
+
+# Name of Factor
+nf<-"Soldering Method"
+
+# Number of levels
+gn<-4
+
+# Generate Dispersion Metrics
+Solder$ADA<-compute.group.dispersion.ADA(fx = push~method, data = Solder)
+ADA<-Solder$ADA
+
+Solder$ADMn1<-compute.group.dispersion.ADMn1(fx = push~method, data = Solder)
+ADMn1<-Solder$ADMn1
+
+# Flextable Fit to Word
+ i = 16.5 # width of the side borders in the word_document output (in centimeters)
+ w = i*0.3937 # width of the side borders in the word_document output (in inches)
+ 
+```
+
+### Step 2: Review Descriptive Summary
+### Step 3: Review Normality Tests
+### Step 4: Review Box and Whisker Plots
+
+```{r Descriptives, echo=FALSE, fig.width=6, fig.align='center'}
+suppressWarnings(so <- ro(summary.continuous(cm ~ factor, df, stat.miss = F),4))
+
+boxplot(cm ~ factor,data=df, xlab=nf, ylab=ncm, main=paste(ncm,"by",nf), col="red")
+```
+
+```{r Descriptives_Table, echo=FALSE}
+so %>%
+  flextable() %>%
+  add_header_lines(values = "Descriptive Summary") %>%
+  width(.,width = (w/(ncol(so)))) %>%
+  theme_box()
+```
+
+
+**Conclusions regarding normality:**
+3 of 4 groups indicate normality. Given the small sample size, we'll assume normality for all groups and move forward with the analysis of dispersion using the ADA.
+
+### Step 5: Conduct One Way ANOVA for Dispersion
+```{r ADA_Fisher_ANOVA, echo=FALSE}
+# Use if within cell normality exists and sample sizes are equal
+anova.ADA.results<-aov(formula = ADA~factor, data = df)
+sourcetable.ADA.aov <- summary(anova.ADA.results)
+anova.ADA.out<-sourcetable.ADA.aov[[1]]
+
+# Statistical Importance Calculation
+model.ADA<-lm(formula = ADA~factor, data = df)
+anova.ADA.stats<-anova_stats(model.ADA, digits = 4)
+omegasq.ADA<-anova.ADA.stats$omegasq[1]
+
+# Add Totals to ANOVA Table
+anova.ADA.temp<-sourcetable.ADA.aov[[1]]
+totaldf<-sum(anova.ADA.temp$Df)
+totalss<-sum(anova.ADA.temp$`Sum Sq`)
+total<-data.frame(totaldf, totalss,"","","")
+names(total)<-c("Df","Sum Sq","Mean Sq","F value","Pr(>F)")
+anova.ADA.out<-rbind(anova.ADA.temp,as.numeric(total))
+rownames(anova.ADA.out)<-paste(c(nf,"Residuals","Total"))
+
+# Print Source Table
+anova.ADA.out %>%
+  tibble::rownames_to_column(var = "Statistic") %>%
+  flextable() %>%
+  add_header_lines(values = paste("ANOVA Source Table - ADA of ",ncm,"by",nf)) %>%
+  colformat_double(j=c('Sum Sq','Mean Sq', 'F value', 'Pr(>F)'), digits=4, na_str = '') %>%
+  add_footer_lines(values = paste("Omega Squared =",omegasq.ADA,", Fisher's ANOVA")) %>%
+   width(.,width = (w/(ncol(anova.ADA.out)))) %>%
+   theme_box()
+```
+
+```{r ADA_Welch_ANOVA, echo=FALSE, eval=FALSE}
+# Use if within cell normality exists and sample sizes are UNequal
+welch.out <- oneway.test(ADA ~ factor, data = df)
+
+# Importance Calculation
+nTot <- nrow(df)  
+wF <- as.numeric(welch.out$statistic)  
+dfEff<-as.numeric(welch.out$parameter[1])
+Imp.Welch <- ro((dfEff*(wF-1))/(dfEff*(wF-1)+nTot),4)
+
+# Create Output table
+Statistic<-wF
+df1<-dfEff
+df2<-as.numeric(welch.out$parameter[2])
+Sig<-welch.out$p.value
+
+welch.df<-as.data.frame(cbind(Statistic, df1, df2, Sig))
+rownames(welch.df)<-"Welch"
+welch.df$Source<-rownames(welch.df)
+welch.table<-welch.df[c(5,1,2,3,4)]
+
+# Print Source Table
+welch.table %>%
+  flextable() %>%
+  add_header_lines(values = paste("Robust Tests of Equality of Means - ADA of",ncm,"by",nf)) %>%
+  colformat_double(j=c('Statistic','df1', 'df2', 'Sig'), digits=4, na_str = '') %>%
+  add_footer_lines(values = paste("Omega Squared =",Imp.Welch, ", Welch's ANOVA"))%>%
+  width(.,width = (w/(ncol(welch.table)))) %>%
+  theme_box()
+```
+
+```{r ADMn1_Fisher_ANOVA, echo=FALSE,eval=FALSE}
+# Use if within cell normality DOES NOT exist and sample sizes are equal
+anova.ADMn1.results<-aov(formula = ADMn1~factor, data = df)
+sourcetable.ADMn1.aov <- summary(anova.ADMn1.results)
+anova.ADMn1.out<-sourcetable.ADMn1.aov[[1]]
+
+# Statistical Importance Calculation
+model.ADMn1<-lm(formula = ADMn1~factor, data = df)
+anova.ADMn1.stats<-anova_stats(model.ADMn1, digits = 4)
+omegasq.ADMn1<-anova.ADMn1.stats$omegasq[1]
+
+# Add Totals to ANOVA Table
+anova.ADMn1.temp<-sourcetable.ADMn1.aov[[1]]
+totaldf<-sum(anova.ADMn1.temp$Df)
+totalss<-sum(anova.ADMn1.temp$`Sum Sq`)
+total<-data.frame(totaldf, totalss,"","","")
+names(total)<-c("Df","Sum Sq","Mean Sq","F value","Pr(>F)")
+anova.ADMn1.out<-rbind(anova.ADMn1.temp,as.numeric(total))
+rownames(anova.ADMn1.out)<-paste(c(nf,"Residuals","Total"))
+
+# Print Source Table
+anova.ADMn1.out %>%
+  tibble::rownames_to_column(var = "Statistic") %>%
+  flextable() %>%
+  add_header_lines(values = paste("ANOVA Source Table - ADMn1 of ",ncm,"by",nf)) %>%
+  colformat_double(j=c('Sum Sq','Mean Sq', 'F value', 'Pr(>F)'), digits=4, na_str = '') %>%
+  add_footer_lines(values = paste("Omega Squared =",omegasq.ADMn1,", Fisher's ANOVA")) %>%
+    width(.,width = (w/(ncol(anova.ADMn1.out)))) %>%
+  theme_box()
+```
+
+```{r ADMn1_Welch_ANOVA, echo=FALSE, eval=FALSE}
+# Use if within cell normality DOES NOT exists and sample sizes are UNequal
+welch.out <- oneway.test(ADMn1 ~ factor, data = df)
+
+# Importance Calculation
+nTot <- nrow(df)  
+wF <- as.numeric(welch.out$statistic)  
+dfEff<-as.numeric(welch.out$parameter[1])
+Imp.Welch <- ro((dfEff*(wF-1))/(dfEff*(wF-1)+nTot),4)
+
+# Create Output table
+Statistic<-wF
+df1<-dfEff
+df2<-as.numeric(welch.out$parameter[2])
+Sig<-welch.out$p.value
+
+welch.df<-as.data.frame(cbind(Statistic, df1, df2, Sig))
+rownames(welch.df)<-"Welch"
+welch.df$Source<-rownames(welch.df)
+welch.table<-welch.df[c(5,1,2,3,4)]
+
+# Print Source Table
+welch.table %>%
+  flextable() %>%
+  add_header_lines(values = paste("Robust Tests of Equality of Means - ADMn1 of",ncm,"by",nf)) %>%
+  align_text_col(align = "center") %>%
+  align(j="Source", align="center", part="body") %>%
+  align_nottext_col(align = "center") %>%
+  colformat_double(j=c('Statistic','df1', 'df2', 'Sig'), digits=4, na_str = '') %>%
+  add_footer_lines(values = paste("Omega Squared =",Imp.Welch, ", Welch's ANOVA")) %>%
+  width(.,width = (w/(ncol(welch.table)))) %>%
+   theme_box()
+```
+
+### Post-Hoc Preparation for Dispersion
+```{r Post Hoc Prep ADA, echo=FALSE, fig.width=6, fig.align='center'}
+# Use ADA when normality within group exists
+ADA.means.var <- summary.impl(fx = ADA ~ factor, 
+                                 data = df, 
+                                 stat.mean = T,
+                                 stat.var = T)
+# 1. Line plot 
+plot(ADA.means.var$mean, xaxt="n", type = "o", lty = 1, pch = 19 
+     , cex = 1.3, lwd= 1.7, col="blue" 
+     , xlab = nf , ylab = "Mean ADA Values"
+     , main = paste("Mean ADA by",nf))
+axis(1, at=1:gn, labels=group.labels)
+```
+
+```{r ADA_Table, echo=FALSE}
+# 2. Print Table
+ro(ADA.means.var,4) %>%
+  flextable() %>%
+  add_header_lines(values = "ADA Means and Variance") %>%
+  width(.,width = (w/(ncol(ADA.means.var)))) %>%
+   theme_box()
+```
+
+
+```{r PH Prep ADMn1, echo=FALSE, fig.width=6, fig.align='center', eval=FALSE}
+# Use ADMn1 when normality within group DOES NOT exist
+# Post-Hoc Preparation
+ADMn1.means.var <- summary.impl(fx = ADMn1 ~ factor, 
+                                 data = df, 
+                                 stat.n = TRUE,
+                                 stat.mean = TRUE, 
+                                 stat.var = TRUE)
+# 1. Line plot 
+plot(ADMn1.means.var$mean, xaxt="n", type = "o", lty = 1, pch = 19 
+     , cex = 1.3, lwd= 1.7, col="blue" 
+     , xlab = nf , ylab = "Mean ADMn1 Values"
+     , main = paste("Mean ADMn1 by",nf))
+axis(1, at=1:gn, labels=group.labels)
+```
+
+```{r ADMn1_Table, echo=FALSE, eval=FALSE}
+# 2. Print Table
+ro(ADMn1.means.var,4) %>%
+  flextable() %>%
+  add_header_lines(values = "ADMn1 Means and Variance") %>%
+  width(.,width = (w/(ncol(ADMn1.means.var)))) %>%
+   theme_box()
+```
+
+### Step 6: Conduct Post-Hoc Tests if significant
+```{r Post_Hoc_Tukey_HSD_ADA, echo=FALSE, fig.width=6}
+# Use Tukey HSD ADA when sample sizes are equal and within cell normality exists
+ADA.means.var <- summary.impl(fx = ADA ~ factor, 
+                                 data = df, 
+                                 stat.n = TRUE,
+                                 stat.mean = TRUE, 
+                                 stat.var = TRUE)
+
+# To conduct the post hoc analysis, pull the following from the ANOVA source table
+  # Mean Square of the Error Term
+  MSE<-anova.ADA.out$`Mean Sq`[2]
+  # Degrees of Freedom of the Error Term
+  dfe<-anova.ADA.out$Df[2]
+  
+tuk.out <- contrasts.tukey.kgroups.simple(group.label = ADA.means.var$factor, group.mean = ADA.means.var$mean, group.sample.size = ADA.means.var$n, conf.level.familywise = 0.95, n.means = gn, mean.squared.error = MSE, df.mean.squared.error = dfe)
+
+tuk.pvals<-data.frame(ro(tuk.out$matrix.p.value,4))
+tuk.pvals$Factor<-rownames(tuk.pvals)
+tuk.pvals <- tuk.pvals %>%
+  dplyr::select(Factor, everything())
+
+tuk.decision<-data.frame(tuk.out$matrix.decision)
+tuk.decision$Factor<-rownames(tuk.decision)
+tuk.decision <- tuk.decision %>%
+  dplyr::select(Factor, everything())
+
+tuk.pvals %>%
+  flextable() %>%
+  add_header_lines(values = "Tukey HSD - p values for ADA Means") %>%
+  width(.,width = (w/(ncol(tuk.pvals)))) %>%
+   theme_box()
+
+AddBreak()
+
+tuk.decision %>%
+  flextable() %>%
+  add_header_lines(values = "Tukey HSD - Decision Matrix") %>%
+  width(.,width = (w/(ncol(tuk.decision)))) %>%
+   theme_box()
+
+AddBreak()
+```
+
+```{r Post_Hoc_Tukey_HSD_ADMn1, echo=FALSE, eval=FALSE}
+# Use Tukey HSD ADMn1 when sample sizes are equal and within cell normality DOES NOT exist
+ADMn1.means.var <- summary.impl(fx = ADMn1 ~ factor, 
+                                 data = df, 
+                                 stat.n = TRUE,
+                                 stat.mean = TRUE, 
+                                 stat.var = TRUE)
+# To conduct the post hoc analysis, pull the following from the ANOVA source table
+  # Mean Square of the Error Term
+  MSE<-anova.ADMn1.out$`Mean Sq`[2]
+  # Degrees of Freedom of the Error Term
+  dfe<-anova.ADMn1.out$Df[2]
+  
+tuk.out <- contrasts.tukey.kgroups.simple(group.label = ADMn1.means.var$factor, group.mean = ADMn1.means.var$mean, group.sample.size = ADMn1.means.var$n, conf.level.familywise = 0.95, n.means = gn, mean.squared.error = MSE, df.mean.squared.error = dfe)
+  
+tuk.pvals<-data.frame(ro(tuk.out$matrix.p.value,4))
+tuk.pvals$Factor<-rownames(tuk.pvals)
+tuk.pvals <- tuk.pvals %>%
+  dplyr::select(Factor, everything())
+
+tuk.decision<-data.frame(tuk.out$matrix.decision)
+tuk.decision$Factor<-rownames(tuk.decision)
+tuk.decision <- tuk.decision %>%
+  dplyr::select(Factor, everything())
+
+tuk.pvals %>%
+  flextable() %>%
+  add_header_lines(values = "Tukey HSD - p values for ADMn1 Means") %>%
+  width(.,width = (w/(ncol(tuk.pvals)))) %>%
+   theme_box()
+
+AddBreak()
+
+tuk.decision %>%
+  flextable() %>%
+  add_header_lines(values = "Tukey HSD - Decision Matrix") %>%
+  width(.,width = (w/(ncol(tuk.decision)))) %>%
+   theme_box()
+AddBreak()
+```
+
+```{r Post_Hoc_Games_and_Howell_ADA, echo=FALSE, eval=FALSE}
+# Use Games and Howell ADA when sample sizes are unequal and within cell normality exists
+ADA.means.var <- summary.impl(fx = ADA ~ factor, 
+                                 data = df, 
+                                 stat.n = TRUE,
+                                 stat.mean = TRUE, 
+                                 stat.var = TRUE)
+
+# Games and Howell {lolcat}  
+gh.out <- contrasts.games.howell.kgroups.simple(group.label = ADA.means.var$factor, group.mean = ADA.means.var$mean, group.variance = ADA.means.var$var, group.sample.size = ADA.means.var$n)
+
+gh.pvals<-data.frame(ro(gh.out$matrix.p.value,4))
+gh.pvals$Factor<-rownames(gh.pvals)
+gh.pvals<- gh.pvals %>%
+  dplyr::select(Factor, everything())
+
+gh.decision<-data.frame(gh.out$matrix.decision)
+gh.decision$Factor<-rownames(gh.decision)
+gh.decision <- gh.decision %>%
+  dplyr::select(Factor, everything())
+
+gh.pvals %>%
+  flextable() %>%
+  add_header_lines(values = "Games & Howell - p values for Means") %>%
+  width(.,width = (w/(ncol(gh.pvals)))) %>%
+   theme_box()
+
+AddBreak()
+
+gh.decision %>%
+  flextable() %>%
+  add_header_lines(values = "Games & Howell - Decision Matrix") %>%
+  width(.,width = (w/(ncol(gh.decision)))) %>%
+   theme_box()
+
+AddBreak()
+```
+
+```{r Post_Hoc_Games_and_Howell_ADMn1, echo=FALSE, eval=FALSE}
+# Use Games and Howell ADMn1 when sample sizes are unequal and within cell normality DOES NOT exists
+ADMn1.means.var <- summary.impl(fx = ADMn1 ~ factor, 
+                                 data = df, 
+                                 stat.n = TRUE,
+                                 stat.mean = TRUE, 
+                                 stat.var = TRUE)
+# Games and Howell {lolcat}  
+gh.out <- contrasts.games.howell.kgroups.simple(group.label = ADMn1.means.var$factor, group.mean = ADMn1.means.var$mean, group.variance = ADMn1.means.var$var, group.sample.size = ADMn1.means.var$n)
+
+gh.pvals<-data.frame(ro(gh.out$matrix.p.value,4))
+gh.pvals$Factor<-rownames(gh.pvals)
+gh.pvals <- gh.pvals %>%
+  dplyr::select(Factor, everything())
+
+gh.decision<-data.frame(gh.out$matrix.decision)
+gh.decision$Factor<-rownames(gh.decision)
+gh.decision<- gh.decision %>%
+  dplyr::select(Factor, everything())
+
+gh.pvals %>%
+  flextable() %>%
+  add_header_lines(values = "Games & Howell - p values for Means") %>%
+  width(.,width = (w/(ncol(gh.pvals)))) %>%
+   theme_box()
+
+AddBreak()
+
+gh.decision %>%
+  flextable() %>%
+  add_header_lines(values = "Games & Howell - Decision Matrix") %>%
+  width(.,width = (w/(ncol(gh.decision)))) %>%
+   theme_box()
+
+AddBreak()
+```
+
+**Conclusions regarding dispersion:**
+We have sufficient statistical evidence to infer that there is a difference between soldering methods with respect to dispersion.
+
+Method New3 yields higher variability than methods New1, New2 and the Current method.
+
+$\sigma^{2}_1=\sigma^{2}_2=\sigma^{2}_{Current}<\sigma^{2}_3$ 
+
+### Step 7: Conduct Oneway ANOVA for Means
+```{r Fisher_ANOVA, echo=FALSE, eval=FALSE}
+# Use if variance/dispersion is equal
+anova.results<-aov(formula = cm~factor, data = df)
+sourcetable.aov <- summary(anova.results)
+anova.out<-sourcetable.aov[[1]]
+
+# Add Totals to ANOVA Table
+anova.temp<-sourcetable.aov[[1]]
+totaldf<-sum(anova.temp$Df)
+totalss<-sum(anova.temp$`Sum Sq`)
+total<-data.frame(totaldf, totalss,"","","")
+names(total)<-c("Df","Sum Sq","Mean Sq","F value","Pr(>F)")
+anova.out<-rbind(anova.temp,as.numeric(total))
+rownames(anova.out)<-paste(c(nf,"Residuals","Total"))
+
+# Statistical Importance Calculation
+model<-lm(formula = cm~factor, data = df)
+anova.stats<-anova_stats(model, digits = 4)
+omegasq<-anova.stats$omegasq[1]
+
+# Print Source Table
+anova.out %>%
+  tibble::rownames_to_column(var = "Statistic") %>%
+  flextable() %>%
+  add_header_lines(values = "ANOVA Source Table") %>%
+  colformat_double(j=c('Sum Sq','Mean Sq', 'F value', 'Pr(>F)'), digits=4, na_str = '') %>%
+  width(.,width = (w/(ncol(anova.out)))) %>%
+   theme_box()
+```
+
+```{r Welch_ANOVA, echo=FALSE}
+# Use if variance/dispersion is UNequal
+welch.out <- oneway.test(cm ~ factor, data = df)
+
+# Importance Calculation
+nTot <- nrow(df)  
+wF <- as.numeric(welch.out$statistic)  
+dfEff<-as.numeric(welch.out$parameter[1])
+Imp.Welch <- ro((dfEff*(wF-1))/(dfEff*(wF-1)+nTot),4)
+
+# Create Output table
+Statistic<-wF
+df1<-dfEff
+df2<-as.numeric(welch.out$parameter[2])
+Sig<-welch.out$p.value
+
+welch.df<-as.data.frame(cbind(Statistic, df1, df2, Sig))
+rownames(welch.df)<-"Welch"
+welch.df$Source<-rownames(welch.df)
+welch.table<-welch.df[c(5,1,2,3,4)]
+
+# Print Source Table
+welch.table %>%
+  flextable() %>%
+  add_header_lines(values = paste("Robust Tests of Equality of Means - ",ncm,"by",nf)) %>%
+  colformat_double(j=c('Statistic','df1', 'df2', 'Sig'), digits=4, na_str = '') %>%
+  add_footer_lines(values = paste("Omega Squared =",Imp.Welch, ", Welch's ANOVA")) %>%
+  width(.,width = (w/(ncol(welch.table)))) %>%
+   theme_box()
+```
+
+
+### Post-Hoc Preparation for Means
+```{r PH Prep Means, echo=FALSE, fig.width=6, fig.align='center'}
+
+means.var <- summary.impl(fx = cm ~ factor,data = df,stat.n = TRUE, stat.mean = TRUE, stat.var = TRUE)
+
+# 1. Line plot 
+plot(means.var$mean, xaxt="n", type = "o", lty = 1, pch = 19, cex = 1.3, lwd= 1.7, col="blue", xlab = nf , ylab = paste("Mean Values of",ncm), main = paste("Mean by",nf))
+axis(1, at=1:gn, labels=group.labels)
+
+```
+
+```{r Means_Table, echo=FALSE}
+# 2. Print Table
+ro(means.var,4) %>%
+  flextable() %>%
+  add_header_lines(values = paste(ncm,"by",nf,"- Means and Variance")) %>%
+  width(.,width = (w/(ncol(means.var)))) %>%
+   theme_box()
+
+```
+
+### Step 8: Conduct Post-Hoc Tests if significant
+
+```{r Post_Hoc_Tukey_HSD, echo=FALSE, eval=FALSE}
+# Use Tukey HSD when variance/dispersion is equal
+
+# To conduct the post hoc analysis, pull the following from the ANOVA source table
+anova.results<-aov(formula = cm~factor, data = df)
+sourcetable.aov <- summary(anova.results)
+anova.out<-sourcetable.aov[[1]]
+
+  # Mean Square of the Error Term
+  MSE<-anova.out$`Mean Sq`[2]
+  # Degrees of Freedom of the Error Term
+  dfe<-anova.out$Df[2]
+  
+tuk.out <- contrasts.tukey.kgroups.simple(group.label = means.var$factor, group.mean = means.var$mean, group.sample.size = ADA.means.var$n, conf.level.familywise = .95, n.means = 4, mean.squared.error = MSE, df.mean.squared.error = dfe)
+
+tuk.pvals<-data.frame(ro(tuk.out$matrix.p.value,4))
+tuk.pvals$Factor<-rownames(tuk.pvals)
+tuk.pvals <- tuk.pvals %>%
+  dplyr::select(Factor, everything())
+
+AddBreak()
+
+tuk.decision<-data.frame(tuk.out$matrix.decision)
+tuk.decision$Factor<-rownames(tuk.decision)
+tuk.decision <- tuk.decision %>%
+  dplyr::select(Factor, everything())
+
+AddBreak()
+
+tuk.pvals %>%
+  flextable() %>%
+  add_header_lines(values = "Tukey HSD - p values for Means") %>%
+   width(.,width = (w/(ncol(tuk.pvals)))) %>%
+   theme_box()
+   
+AddBreak()
+
+tuk.decision %>%
+  flextable() %>%
+  add_header_lines(values = "Tukey HSD - Decision Matrix") %>%
+  width(.,width = (w/(ncol(tuk.decision)))) %>%
+   theme_box()
+```
+
+```{r Post_Hoc_Games_and_Howell, echo=FALSE}
+# Use Games and Howell when variance/dispersion is unequal 
+
+# Games and Howell {lolcat}  
+gh.out <- contrasts.games.howell.kgroups.simple(group.label = means.var$factor, group.mean = means.var$mean, group.variance = means.var$var, group.sample.size = means.var$n)
+
+gh.pvals<-data.frame(ro(gh.out$matrix.p.value,4))
+gh.pvals$Factor<-rownames(gh.pvals)
+gh.pvals <- gh.pvals %>%
+  dplyr::select(Factor, everything())
+
+gh.decision<-data.frame(gh.out$matrix.decision)
+gh.decision$Factor<-rownames(gh.decision)
+gh.decision <- gh.decision %>%
+  dplyr::select(Factor, everything())
+
+gh.pvals %>%
+  flextable() %>%
+  add_header_lines(values = "Games & Howell - p values for Means") %>%
+  width(.,width = (w/(ncol(gh.pvals)))) %>%
+   theme_box()
+
+AddBreak()
+
+gh.decision %>%
+  flextable() %>%
+  add_header_lines(values = "Games & Howell - Decision Matrix") %>%
+  width(.,width = (w/(ncol(gh.decision)))) %>%
+   theme_box()
+
+AddBreak()
+```
+
+**Conclusions regarding means:**
+We have sufficient statistical evidence to infer that there is a difference between soldering methods with respect to the means.
+
+The push force in method 3 is higher than the push force for the current method, method New1 and method New2. Method New2 yields a higher mean than method New1 and the Current method.
+
+$\mu_1=\mu_{Current}<\mu_2<\mu_3$ 
